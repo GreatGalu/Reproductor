@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using SoundCore.Modelos;
 using SoundCore.Audio;
@@ -26,7 +27,7 @@ namespace SoundCore.UI
             ConfigurarDgvCola();
 
             // Filtro en tiempo real con los campos existentes
-            txtTitulo.TextChanged  += (s, e) => RefrescarVista();
+            txtTitulo.TextChanged += (s, e) => RefrescarVista();
             txtArtista.TextChanged += (s, e) => RefrescarVista();
 
             RefrescarVista();
@@ -360,47 +361,66 @@ namespace SoundCore.UI
             }
         }
 
-        private void btnBenchmark_Click(object? sender, EventArgs e)
+        private async void btnBenchmark_Click(object? sender, EventArgs e)
         {
-            int n = 20000;
+            const int n = 25_000;
+
+            btnBenchmark.Enabled = false;
+            txtResultadosBenchmark.Text = $"Ejecutando prueba de estrés con {n:N0} inserciones intermedias...";
+
+            try
+            {
+                // Se ejecuta en un hilo aparte para no congelar la interfaz ni el audio.
+                var (tPropia, tLinked, tList) = await Task.Run(() => EjecutarBenchmark(n));
+
+                txtResultadosBenchmark.Text =
+                    $"=== RESULTADOS DE ESTRÉS ({n:N0} INSERCIONES INTERMEDIAS) ===\r\n" +
+                    $"- Lista Propia (Nodos):   {tPropia,8:F1} ms | ReproducirSiguiente: O(1) por reconexión de punteros\r\n" +
+                    $"- .NET LinkedList<T>:     {tLinked,8:F1} ms | AddAfter(First): O(1) con LinkedListNode\r\n" +
+                    $"- .NET List<T>:           {tList,8:F1} ms | Insert(1): O(n), sufre Array.Copy en cada inserción\r\n\r\n" +
+                    "Conclusión técnica: en inserciones intermedias frecuentes las listas enlazadas " +
+                    "solo redirigen referencias, mientras que List<T> desplaza en memoria todos los " +
+                    "elementos posteriores (Array.Copy) y redimensiona su búfer interno.";
+            }
+            catch (Exception ex)
+            {
+                txtResultadosBenchmark.Text = $"Error al ejecutar el benchmark:\r\n{ex.Message}";
+            }
+            finally
+            {
+                btnBenchmark.Enabled = true;
+            }
+        }
+
+        private static (double propia, double linked, double list) EjecutarBenchmark(int n)
+        {
+            var rnd = new Random(42);
             var sw = new Stopwatch();
+
             var testPropia = new ListaSimpleEnlazada<Pista>();
             testPropia.AgregarAlFinal(new Pista(0, "Head", "DJ", 120, 200, ""));
             sw.Start();
             for (int i = 0; i < n; i++)
-            {
-                testPropia.ReproducirSiguiente(new Pista(i, $"Pista {i}", "DJ", _rand.Next(100, 150), 180, ""));
-            }
+                testPropia.ReproducirSiguiente(new Pista(i, $"Pista {i}", "DJ", rnd.Next(100, 150), 180, ""));
             sw.Stop();
-            long tiempoPropia = sw.ElapsedMilliseconds;
+            double tPropia = sw.Elapsed.TotalMilliseconds;
 
-            var testLinkedList = new LinkedList<Pista>();
-            testLinkedList.AddLast(new Pista(0, "Head", "DJ", 120, 200, ""));
+            var testLinked = new LinkedList<Pista>();
+            testLinked.AddLast(new Pista(0, "Head", "DJ", 120, 200, ""));
             sw.Restart();
             for (int i = 0; i < n; i++)
-            {
-                testLinkedList.AddAfter(testLinkedList.First!, new Pista(i, $"Pista {i}", "DJ", _rand.Next(100, 150), 180, ""));
-            }
+                testLinked.AddAfter(testLinked.First!, new Pista(i, $"Pista {i}", "DJ", rnd.Next(100, 150), 180, ""));
             sw.Stop();
-            long tiempoLinkedList = sw.ElapsedMilliseconds;
+            double tLinked = sw.Elapsed.TotalMilliseconds;
 
             var testList = new List<Pista> { new Pista(0, "Head", "DJ", 120, 200, "") };
             sw.Restart();
             for (int i = 0; i < n; i++)
-            {
-                testList.Insert(1, new Pista(i, $"Pista {i}", "DJ", _rand.Next(100, 150), 180, ""));
-            }
+                testList.Insert(1, new Pista(i, $"Pista {i}", "DJ", rnd.Next(100, 150), 180, ""));
             sw.Stop();
-            long tiempoList = sw.ElapsedMilliseconds;
+            double tList = sw.Elapsed.TotalMilliseconds;
 
-            MessageBox.Show(
-                $"=== RESULTADOS DE ESTRÉS ({n:N0} INSERCIONES INTERMEDIAS) ===\n\n" +
-                $"• Lista Enlazada Propia (Nodos):   {tiempoPropia} ms  [Operación O(1) por reconexión]\n" +
-                $"• .NET LinkedList<T>:             {tiempoLinkedList} ms  [Operación O(1)]\n" +
-                $"• .NET List<T> (Array Dinámico):   {tiempoList} ms  [Operación O(n) por desplazamiento de memoria]\n\n" +
-                $"Conclusión Técnica: En inserciones intermedias frecuentes, las Listas Enlazadas superan a List<T> " +
-                $"porque no ejecutan Array.Copy ni redimensionamiento de búfer.",
-                "Prueba de Estrés (Benchmark)", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return (tPropia, tLinked, tList);
         }
     }
 }
