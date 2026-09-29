@@ -11,7 +11,6 @@ namespace SoundCore.EstructurasPropias
 
         public bool EstaVacia => Cabeza == null;
 
-        // 1. Inserción al final: O(n)
         public void AgregarAlFinal(T valor)
         {
             var nuevoNodo = new Nodo<T>(valor);
@@ -31,7 +30,6 @@ namespace SoundCore.EstructurasPropias
             Conteo++;
         }
 
-        // 2. Up Next: Inserción inmediata tras la cabeza: O(1)
         public void ReproducirSiguiente(T valor)
         {
             var nuevoNodo = new Nodo<T>(valor);
@@ -47,7 +45,6 @@ namespace SoundCore.EstructurasPropias
             Conteo++;
         }
 
-        // 3. Desencolar pista actual (eliminar cabeza): O(1)
         public T AvanzarPista()
         {
             if (EstaVacia)
@@ -59,7 +56,6 @@ namespace SoundCore.EstructurasPropias
             return valor;
         }
 
-        // 4. Inversión In-Place: O(n) tiempo, O(1) memoria auxiliar
         public void Invertir()
         {
             Nodo<T>? previo = null;
@@ -68,16 +64,15 @@ namespace SoundCore.EstructurasPropias
 
             while (actual != null)
             {
-                siguiente = actual.Siguiente; // Guardar puntero al resto de la lista
-                actual.Siguiente = previo;    // Invertir la referencia
-                previo = actual;              // Desplazar previo
-                actual = siguiente;           // Desplazar actual
+                siguiente = actual.Siguiente;
+                actual.Siguiente = previo;
+                previo = actual;
+                actual = siguiente;
             }
 
             Cabeza = previo;
         }
 
-        // 5. Inserción ordenada por criterio (ej. BPM): O(n)
         public void InsertarOrdenado(T valor, Comparison<T> comparador)
         {
             var nuevo = new Nodo<T>(valor);
@@ -101,7 +96,6 @@ namespace SoundCore.EstructurasPropias
             Conteo++;
         }
 
-        // 6. Depurar duplicados sin estructuras externas: O(n^2) tiempo, O(1) espacio
         public void DepurarDuplicados(Func<T, T, bool> sonIguales)
         {
             var actual = Cabeza;
@@ -113,7 +107,6 @@ namespace SoundCore.EstructurasPropias
                 {
                     if (sonIguales(actual.Valor, corredor.Siguiente.Valor))
                     {
-                        // Saltear el nodo duplicado para desconectarlo de la memoria
                         corredor.Siguiente = corredor.Siguiente.Siguiente;
                         Conteo--;
                     }
@@ -132,7 +125,6 @@ namespace SoundCore.EstructurasPropias
             Conteo = 0;
         }
 
-        // Habilita data binding y foreach
         public IEnumerator<T> GetEnumerator()
         {
             var actual = Cabeza;

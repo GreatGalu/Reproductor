@@ -16,8 +16,6 @@ namespace SoundCore.UI
         private AudioPlayer _audioPlayer = new AudioPlayer();
         private int _contadorId = 1;
         private Random _rand = new Random();
-
-        // Estructuras paralelas
         private readonly ListaSimpleEnlazada<Pista> _colaPropia = new();
         private readonly LinkedList<Pista> _colaLinkedList = new();
         private readonly List<Pista> _colaList = new();
@@ -26,6 +24,11 @@ namespace SoundCore.UI
         {
             InitializeComponent();
             ConfigurarDgvCola();
+
+            // Filtro en tiempo real con los campos existentes
+            txtTitulo.TextChanged  += (s, e) => RefrescarVista();
+            txtArtista.TextChanged += (s, e) => RefrescarVista();
+
             RefrescarVista();
         }
 
@@ -340,6 +343,16 @@ namespace SoundCore.UI
             IEnumerable<Pista> coleccion = rbPropia.Checked ? _colaPropia :
                                            rbLinkedList.Checked ? _colaLinkedList : _colaList;
 
+            // Filtrar por Título
+            string filtroTitulo = txtTitulo.Text.Trim().ToLower();
+            if (!string.IsNullOrEmpty(filtroTitulo))
+                coleccion = coleccion.Where(p => p.Titulo.ToLower().Contains(filtroTitulo));
+
+            // Filtrar por Artista
+            string filtroArtista = txtArtista.Text.Trim().ToLower();
+            if (!string.IsNullOrEmpty(filtroArtista))
+                coleccion = coleccion.Where(p => p.Artista.ToLower().Contains(filtroArtista));
+
             int index = 1;
             foreach (var p in coleccion)
             {
@@ -351,8 +364,6 @@ namespace SoundCore.UI
         {
             int n = 20000;
             var sw = new Stopwatch();
-
-            // 1. Test Inserción Intermedia: Lista Propia
             var testPropia = new ListaSimpleEnlazada<Pista>();
             testPropia.AgregarAlFinal(new Pista(0, "Head", "DJ", 120, 200, ""));
             sw.Start();
@@ -363,7 +374,6 @@ namespace SoundCore.UI
             sw.Stop();
             long tiempoPropia = sw.ElapsedMilliseconds;
 
-            // 2. Test Inserción Intermedia: LinkedList<T>
             var testLinkedList = new LinkedList<Pista>();
             testLinkedList.AddLast(new Pista(0, "Head", "DJ", 120, 200, ""));
             sw.Restart();
@@ -374,7 +384,6 @@ namespace SoundCore.UI
             sw.Stop();
             long tiempoLinkedList = sw.ElapsedMilliseconds;
 
-            // 3. Test Inserción Intermedia: List<T> (Array Copy)
             var testList = new List<Pista> { new Pista(0, "Head", "DJ", 120, 200, "") };
             sw.Restart();
             for (int i = 0; i < n; i++)

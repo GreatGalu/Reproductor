@@ -22,7 +22,6 @@ namespace SoundCore.Modelos
             }
             catch
             {
-                // Ignoring exception, return null
             }
             return null;
         }
