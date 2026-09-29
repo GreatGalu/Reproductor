@@ -16,7 +16,6 @@ namespace SoundCore.UI
         private AudioPlayer _audioPlayer = new AudioPlayer();
         private int _contadorId = 1;
         private Random _rand = new Random();
-        private TextBox txtBuscar;
 
         // Estructuras paralelas
         private readonly ListaSimpleEnlazada<Pista> _colaPropia = new();
@@ -27,71 +26,7 @@ namespace SoundCore.UI
         {
             InitializeComponent();
             ConfigurarDgvCola();
-            AplicarTemaOscuro();
             RefrescarVista();
-        }
-
-        private void AplicarTemaOscuro()
-        {
-            Color fondoOscuro = Color.FromArgb(25, 25, 30);
-            Color moradoOscuro = Color.FromArgb(52, 21, 57); // #341539
-            Color textoClaro = Color.White;
-            Color cianAcento = Color.FromArgb(0, 229, 255);
-            
-            this.BackColor = fondoOscuro;
-            this.ForeColor = textoClaro;
-            
-            panelTop.BackColor = moradoOscuro;
-            
-            // Configurar DGV
-            dgvCola.BackgroundColor = fondoOscuro;
-            dgvCola.DefaultCellStyle.BackColor = Color.FromArgb(35, 35, 40);
-            dgvCola.DefaultCellStyle.ForeColor = textoClaro;
-            dgvCola.DefaultCellStyle.SelectionBackColor = cianAcento;
-            dgvCola.DefaultCellStyle.SelectionForeColor = Color.Black;
-            dgvCola.ColumnHeadersDefaultCellStyle.BackColor = moradoOscuro;
-            dgvCola.ColumnHeadersDefaultCellStyle.ForeColor = textoClaro;
-            dgvCola.ColumnHeadersDefaultCellStyle.SelectionBackColor = moradoOscuro;
-            dgvCola.EnableHeadersVisualStyles = false;
-            dgvCola.RowHeadersVisible = false;
-            dgvCola.GridColor = Color.FromArgb(50, 50, 50);
-            
-            // Estilizar Botones
-            foreach (Control c in this.Controls) {
-                if (c is Button btn) {
-                    btn.FlatStyle = FlatStyle.Flat;
-                    btn.FlatAppearance.BorderColor = cianAcento;
-                    btn.BackColor = moradoOscuro;
-                    btn.ForeColor = textoClaro;
-                }
-            }
-            foreach (Control c in panelTop.Controls) {
-                if (c is Button btn) {
-                    btn.FlatStyle = FlatStyle.Flat;
-                    btn.FlatAppearance.BorderColor = cianAcento;
-                    btn.BackColor = Color.FromArgb(40, 10, 45);
-                    btn.ForeColor = textoClaro;
-                }
-            }
-
-            // Crear barra de búsqueda dinámica
-            Label lblBuscar = new Label() { Text = "🔍 Buscar:", AutoSize = true, Location = new Point(10, 80), ForeColor = cianAcento, Font = new Font("Segoe UI", 10, FontStyle.Bold) };
-            txtBuscar = new TextBox();
-            txtBuscar.Location = new Point(90, 78);
-            txtBuscar.Size = new Size(300, 25);
-            txtBuscar.BackColor = Color.FromArgb(40, 40, 45);
-            txtBuscar.ForeColor = textoClaro;
-            txtBuscar.BorderStyle = BorderStyle.FixedSingle;
-            txtBuscar.TextChanged += (s, e) => RefrescarVista();
-            
-            this.Controls.Add(lblBuscar);
-            this.Controls.Add(txtBuscar);
-            
-            // Mover DGV abajo
-            dgvCola.Location = new Point(12, 115);
-            dgvCola.Size = new Size(580, 180);
-            pictureBoxAlbum.Location = new Point(610, 115);
-            pictureBoxAlbum.Size = new Size(260, 180);
         }
 
         private void ConfigurarDgvCola()
@@ -139,11 +74,6 @@ namespace SoundCore.UI
 
         private void btnCargarArchivos_Click(object? sender, EventArgs e)
         {
-            AgregarArchivos(false, false);
-        }
-
-        private void AgregarArchivos(bool upNext, bool limpiarPrimero)
-        {
             using (OpenFileDialog ofd = new OpenFileDialog())
             {
                 ofd.Filter = "Archivos de Audio|*.mp3;*.wav";
@@ -151,17 +81,7 @@ namespace SoundCore.UI
 
                 if (ofd.ShowDialog() == DialogResult.OK)
                 {
-                    if (limpiarPrimero) 
-                    {
-                        if (rbPropia.Checked) _colaPropia.Limpiar();
-                        else if (rbLinkedList.Checked) _colaLinkedList.Clear();
-                        else _colaList.Clear();
-                    }
-
-                    // Si es upNext, invertimos el orden para que se inserten correctamente uno tras otro en la cima
-                    var archivos = upNext ? ofd.FileNames.Reverse().ToArray() : ofd.FileNames;
-
-                    foreach (string file in archivos)
+                    foreach (string file in ofd.FileNames)
                     {
                         string title = System.IO.Path.GetFileNameWithoutExtension(file);
                         string artist = "Desconocido";
@@ -186,25 +106,7 @@ namespace SoundCore.UI
                         if (bpm == 0) bpm = _rand.Next(100, 141);
 
                         var pista = new Pista(_contadorId++, title, artist, bpm, duration, file);
-                        
-                        if (upNext)
-                        {
-                            if (rbPropia.Checked) _colaPropia.ReproducirSiguiente(pista);
-                            else if (rbLinkedList.Checked)
-                            {
-                                if (_colaLinkedList.First == null) _colaLinkedList.AddFirst(pista);
-                                else _colaLinkedList.AddAfter(_colaLinkedList.First, pista);
-                            }
-                            else
-                            {
-                                if (_colaList.Count <= 1) _colaList.Add(pista);
-                                else _colaList.Insert(1, pista);
-                            }
-                        }
-                        else
-                        {
-                            InsertarAlFinal(pista);
-                        }
+                        InsertarAlFinal(pista);
                     }
                     RefrescarVista();
                 }
@@ -225,7 +127,7 @@ namespace SoundCore.UI
                 int id = Convert.ToInt32(dgvCola.CurrentRow.Cells[1].Value);
                 var coleccion = ObtenerColeccionActiva();
                 var pista = coleccion.FirstOrDefault(p => p.Id == id);
-                
+
                 if (pista != null)
                 {
                     if (string.IsNullOrWhiteSpace(pista.FilePath) || !System.IO.File.Exists(pista.FilePath))
@@ -234,13 +136,13 @@ namespace SoundCore.UI
                         return;
                     }
 
-                    try 
+                    try
                     {
                         _audioPlayer.Load(pista.FilePath);
                         _audioPlayer.Play();
                         timerProgress.Start();
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         MessageBox.Show($"No se pudo reproducir el archivo:\n{ex.Message}", "Error de Reproducción", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
@@ -296,45 +198,31 @@ namespace SoundCore.UI
 
         private void btnEncolarFinal_Click(object? sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtTitulo.Text))
-            {
-                AgregarArchivos(false, false);
-            }
-            else
-            {
-                var pista = LeerPistaDesdeInputs();
-                InsertarAlFinal(pista);
-                RefrescarVista();
-            }
+            var pista = LeerPistaDesdeInputs();
+            InsertarAlFinal(pista);
+            RefrescarVista();
         }
 
         private void btnUpNext_Click(object? sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtTitulo.Text))
+            var pista = LeerPistaDesdeInputs();
+
+            if (rbPropia.Checked)
             {
-                AgregarArchivos(true, false);
+                _colaPropia.ReproducirSiguiente(pista);
+            }
+            else if (rbLinkedList.Checked)
+            {
+                if (_colaLinkedList.First == null) _colaLinkedList.AddFirst(pista);
+                else _colaLinkedList.AddAfter(_colaLinkedList.First, pista);
             }
             else
             {
-                var pista = LeerPistaDesdeInputs();
-
-                if (rbPropia.Checked)
-                {
-                    _colaPropia.ReproducirSiguiente(pista);
-                }
-                else if (rbLinkedList.Checked)
-                {
-                    if (_colaLinkedList.First == null) _colaLinkedList.AddFirst(pista);
-                    else _colaLinkedList.AddAfter(_colaLinkedList.First, pista);
-                }
-                else
-                {
-                    if (_colaList.Count <= 1) _colaList.Add(pista);
-                    else _colaList.Insert(1, pista);
-                }
-
-                RefrescarVista();
+                if (_colaList.Count <= 1) _colaList.Add(pista);
+                else _colaList.Insert(1, pista);
             }
+
+            RefrescarVista();
         }
 
         private void btnAvanzar_Click(object? sender, EventArgs e)
@@ -451,14 +339,6 @@ namespace SoundCore.UI
             dgvCola.Rows.Clear();
             IEnumerable<Pista> coleccion = rbPropia.Checked ? _colaPropia :
                                            rbLinkedList.Checked ? _colaLinkedList : _colaList;
-
-            string filtro = txtBuscar != null ? txtBuscar.Text.Trim().ToLower() : "";
-            if (!string.IsNullOrEmpty(filtro))
-            {
-                coleccion = coleccion.Where(p => 
-                    p.Titulo.ToLower().Contains(filtro) || 
-                    p.Artista.ToLower().Contains(filtro));
-            }
 
             int index = 1;
             foreach (var p in coleccion)
