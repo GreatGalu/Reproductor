@@ -37,7 +37,6 @@ namespace SoundCore.Audio
                 }
             }
         }
-
         public string CurrentFilePath { get; private set; } = string.Empty;
 
         public void Load(string filePath)

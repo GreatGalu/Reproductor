@@ -47,6 +47,7 @@ namespace SoundCore.UI
             btnOrdenarBPM = new Button();
             btnPurgar = new Button();
             btnBenchmark = new Button();
+            btnCargar25k = new Button();
             grpBenchmark = new GroupBox();
             txtResultadosBenchmark = new TextBox();
             panelTop.SuspendLayout();
@@ -157,7 +158,7 @@ namespace SoundCore.UI
             // rbLinkedList
             // 
             rbLinkedList.AutoSize = true;
-            rbLinkedList.Location = new Point(210, 14);
+            rbLinkedList.Location = new Point(248, 16);
             rbLinkedList.Name = "rbLinkedList";
             rbLinkedList.Size = new Size(157, 24);
             rbLinkedList.TabIndex = 2;
@@ -169,7 +170,7 @@ namespace SoundCore.UI
             // rbList
             // 
             rbList.AutoSize = true;
-            rbList.Location = new Point(340, 14);
+            rbList.Location = new Point(411, 18);
             rbList.Name = "rbList";
             rbList.Size = new Size(114, 24);
             rbList.TabIndex = 3;
@@ -236,7 +237,7 @@ namespace SoundCore.UI
             lblTiempo.Location = new Point(468, 310);
             lblTiempo.Name = "lblTiempo";
             lblTiempo.Size = new Size(93, 20);
-            lblTiempo.TabIndex = 17;
+            lblTiempo.TabIndex = 18;
             lblTiempo.Text = "00:00 / 00:00";
             // 
             // lblVolumen
@@ -245,7 +246,7 @@ namespace SoundCore.UI
             lblVolumen.Location = new Point(610, 310);
             lblVolumen.Name = "lblVolumen";
             lblVolumen.Size = new Size(33, 20);
-            lblVolumen.TabIndex = 16;
+            lblVolumen.TabIndex = 17;
             lblVolumen.Text = "Vol:";
             // 
             // trackBarVolume
@@ -266,7 +267,7 @@ namespace SoundCore.UI
             // 
             // btnPlay
             // 
-            btnPlay.Location = new Point(610, 350);
+            btnPlay.Location = new Point(610, 359);
             btnPlay.Name = "btnPlay";
             btnPlay.Size = new Size(80, 30);
             btnPlay.TabIndex = 3;
@@ -276,7 +277,7 @@ namespace SoundCore.UI
             // 
             // btnPause
             // 
-            btnPause.Location = new Point(700, 350);
+            btnPause.Location = new Point(696, 359);
             btnPause.Name = "btnPause";
             btnPause.Size = new Size(80, 30);
             btnPause.TabIndex = 4;
@@ -286,7 +287,7 @@ namespace SoundCore.UI
             // 
             // btnStop
             // 
-            btnStop.Location = new Point(790, 350);
+            btnStop.Location = new Point(789, 359);
             btnStop.Name = "btnStop";
             btnStop.Size = new Size(80, 30);
             btnStop.TabIndex = 5;
@@ -296,7 +297,7 @@ namespace SoundCore.UI
             // 
             // btnEncolarFinal
             // 
-            btnEncolarFinal.Location = new Point(12, 350);
+            btnEncolarFinal.Location = new Point(12, 359);
             btnEncolarFinal.Name = "btnEncolarFinal";
             btnEncolarFinal.Size = new Size(100, 30);
             btnEncolarFinal.TabIndex = 6;
@@ -306,7 +307,7 @@ namespace SoundCore.UI
             // 
             // btnUpNext
             // 
-            btnUpNext.Location = new Point(118, 350);
+            btnUpNext.Location = new Point(118, 359);
             btnUpNext.Name = "btnUpNext";
             btnUpNext.Size = new Size(85, 30);
             btnUpNext.TabIndex = 7;
@@ -316,7 +317,7 @@ namespace SoundCore.UI
             // 
             // btnAvanzar
             // 
-            btnAvanzar.Location = new Point(209, 350);
+            btnAvanzar.Location = new Point(209, 359);
             btnAvanzar.Name = "btnAvanzar";
             btnAvanzar.Size = new Size(85, 30);
             btnAvanzar.TabIndex = 8;
@@ -326,7 +327,7 @@ namespace SoundCore.UI
             // 
             // btnInvertir
             // 
-            btnInvertir.Location = new Point(300, 350);
+            btnInvertir.Location = new Point(300, 359);
             btnInvertir.Name = "btnInvertir";
             btnInvertir.Size = new Size(85, 30);
             btnInvertir.TabIndex = 9;
@@ -336,7 +337,7 @@ namespace SoundCore.UI
             // 
             // btnOrdenarBPM
             // 
-            btnOrdenarBPM.Location = new Point(391, 350);
+            btnOrdenarBPM.Location = new Point(391, 359);
             btnOrdenarBPM.Name = "btnOrdenarBPM";
             btnOrdenarBPM.Size = new Size(105, 30);
             btnOrdenarBPM.TabIndex = 10;
@@ -346,7 +347,7 @@ namespace SoundCore.UI
             // 
             // btnPurgar
             // 
-            btnPurgar.Location = new Point(502, 350);
+            btnPurgar.Location = new Point(502, 359);
             btnPurgar.Name = "btnPurgar";
             btnPurgar.Size = new Size(90, 30);
             btnPurgar.TabIndex = 11;
@@ -364,6 +365,16 @@ namespace SoundCore.UI
             btnBenchmark.UseVisualStyleBackColor = true;
             btnBenchmark.Click += btnBenchmark_Click;
             // 
+            // btnCargar25k
+            // 
+            btnCargar25k.Location = new Point(12, 435);
+            btnCargar25k.Name = "btnCargar25k";
+            btnCargar25k.Size = new Size(200, 30);
+            btnCargar25k.TabIndex = 16;
+            btnCargar25k.Text = "🎵 Cargar 25k Pistas";
+            btnCargar25k.UseVisualStyleBackColor = true;
+            btnCargar25k.Click += btnCargar25k_Click;
+            // 
             // grpBenchmark
             // 
             grpBenchmark.Controls.Add(txtResultadosBenchmark);
@@ -376,10 +387,10 @@ namespace SoundCore.UI
             // 
             // txtResultadosBenchmark
             // 
-            txtResultadosBenchmark.BackColor = Color.White;
+            txtResultadosBenchmark.BackColor = Color.FromArgb(30, 30, 30);
             txtResultadosBenchmark.Dock = DockStyle.Fill;
             txtResultadosBenchmark.Font = new Font("Consolas", 9F);
-            txtResultadosBenchmark.ForeColor = Color.FromArgb(30, 30, 30);
+            txtResultadosBenchmark.ForeColor = Color.Gainsboro;
             txtResultadosBenchmark.Location = new Point(3, 23);
             txtResultadosBenchmark.Multiline = true;
             txtResultadosBenchmark.Name = "txtResultadosBenchmark";
@@ -387,12 +398,15 @@ namespace SoundCore.UI
             txtResultadosBenchmark.ScrollBars = ScrollBars.Vertical;
             txtResultadosBenchmark.Size = new Size(641, 124);
             txtResultadosBenchmark.TabIndex = 0;
+            txtResultadosBenchmark.Text = "Presiona \"Benchmark\" para ejecutar la prueba de estrés.";
+            txtResultadosBenchmark.TextChanged += txtResultadosBenchmark_TextChanged;
             // 
             // MainForm
             // 
-            ClientSize = new Size(884, 550);
+            ClientSize = new Size(884, 568);
             Controls.Add(grpBenchmark);
             Controls.Add(btnBenchmark);
+            Controls.Add(btnCargar25k);
             Controls.Add(trackBarVolume);
             Controls.Add(lblVolumen);
             Controls.Add(lblTiempo);
@@ -459,6 +473,7 @@ namespace SoundCore.UI
         private System.Windows.Forms.Button btnOrdenarBPM;
         private System.Windows.Forms.Button btnPurgar;
         private System.Windows.Forms.Button btnBenchmark;
+        private System.Windows.Forms.Button btnCargar25k;
         private System.Windows.Forms.GroupBox grpBenchmark;
         private System.Windows.Forms.TextBox txtResultadosBenchmark;
     }

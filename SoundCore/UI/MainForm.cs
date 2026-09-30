@@ -76,44 +76,115 @@ namespace SoundCore.UI
             }
         }
 
-        private void btnCargarArchivos_Click(object? sender, EventArgs e)
+        private async void btnCargarArchivos_Click(object? sender, EventArgs e)
         {
-            using (OpenFileDialog ofd = new OpenFileDialog())
+            using OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Filter = "Archivos de Audio|*.mp3;*.wav";
+            ofd.Multiselect = true;
+            if (ofd.ShowDialog() != DialogResult.OK) return;
+
+            btnCargarArchivos.Enabled = false;
+            var log = new System.Text.StringBuilder();
+            int total = ofd.FileNames.Length, actual = 0;
+
+            try
             {
-                ofd.Filter = "Archivos de Audio|*.mp3;*.wav";
-                ofd.Multiselect = true;
-
-                if (ofd.ShowDialog() == DialogResult.OK)
+                foreach (string file in ofd.FileNames)
                 {
-                    foreach (string file in ofd.FileNames)
-                    {
-                        string title = System.IO.Path.GetFileNameWithoutExtension(file);
-                        string artist = "Desconocido";
-                        int bpm = 0;
-                        int duration = 0;
+                    actual++;
+                    string title = System.IO.Path.GetFileNameWithoutExtension(file);
+                    string artist = "Desconocido";
+                    int bpm = 0;
+                    int duration = 0;
 
+                    try
+                    {
+                        using (var tagFile = TagLib.File.Create(file))
+                        {
+                            if (!string.IsNullOrEmpty(tagFile.Tag.Title)) title = tagFile.Tag.Title;
+                            if (tagFile.Tag.Performers != null && tagFile.Tag.Performers.Length > 0) artist = string.Join(", ", tagFile.Tag.Performers);
+                            bpm = (int)tagFile.Tag.BeatsPerMinute;
+                            if (tagFile.Properties != null) duration = (int)tagFile.Properties.Duration.TotalSeconds;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error leyendo metadatos: {ex.Message}");
+                    }
+
+                    // Sin BPM en la etiqueta: se calcula UNA vez, se guarda y en las siguientes cargas ya viene resuelto.
+                    if (bpm == 0)
+                    {
+                        txtResultadosBenchmark.Text = $"Analizando BPM ({actual}/{total}): {title}...";
                         try
                         {
-                            using (var tagFile = TagLib.File.Create(file))
-                            {
-                                if (!string.IsNullOrEmpty(tagFile.Tag.Title)) title = tagFile.Tag.Title;
-                                if (tagFile.Tag.Performers != null && tagFile.Tag.Performers.Length > 0) artist = string.Join(", ", tagFile.Tag.Performers);
-                                bpm = (int)tagFile.Tag.BeatsPerMinute;
-                                if (tagFile.Properties != null) duration = (int)tagFile.Properties.Duration.TotalSeconds;
-                            }
+                            string ruta = file;
+                            var (bpmCalc, origen) = await Task.Run(() => SoundCore.Audio.BpmService.ResolverBpm(ruta));
+                            bpm = bpmCalc;
+                            log.AppendLine($"- {title}: {bpm} BPM ({origen})");
                         }
                         catch (Exception ex)
                         {
-                            System.Diagnostics.Debug.WriteLine($"Error leyendo metadatos: {ex.Message}");
+                            bpm = 120;
+                            log.AppendLine($"- {title}: no se pudo calcular ({ex.Message}); se usó 120 BPM sin guardar");
                         }
-
-                        if (bpm == 0) bpm = _rand.Next(100, 141);
-
-                        var pista = new Pista(_contadorId++, title, artist, bpm, duration, file);
-                        InsertarAlFinal(pista);
                     }
-                    RefrescarVista();
+
+                    InsertarAlFinal(new Pista(_contadorId++, title, artist, bpm, duration, file));
                 }
+
+                RefrescarVista();
+                txtResultadosBenchmark.Text = log.Length > 0
+                    ? "=== BPM CALCULADOS AL CARGAR ===\r\n" + log.ToString().Replace("\n", "\r\n").Replace("\r\r\n", "\r\n")
+                    : $"Se cargaron {total} archivo(s); todos ya tenían BPM en su etiqueta.";
+            }
+            finally
+            {
+                btnCargarArchivos.Enabled = true;
+            }
+        }
+
+        private void btnCargar25k_Click(object? sender, EventArgs e)
+        {
+            const int n = 25_000;
+            string estructura = rbPropia.Checked ? "Lista propia (nodos)" :
+                                rbLinkedList.Checked ? "LinkedList<T>" : "List<T>";
+
+            btnCargar25k.Enabled = false;
+            Cursor = Cursors.WaitCursor;
+            try
+            {
+                // Carga real: 25,000 pistas insertadas una por una en la estructura seleccionada.
+                var sw = Stopwatch.StartNew();
+                for (int i = 0; i < n; i++)
+                {
+                    var pista = new Pista(_contadorId++, $"Pista de prueba {i + 1}", $"Artista {_rand.Next(1, 201)}",
+                                          _rand.Next(60, 221), _rand.Next(120, 361), "");
+                    InsertarAlFinal(pista);
+                }
+                sw.Stop();
+                double tInsercion = sw.Elapsed.TotalMilliseconds;
+
+                sw.Restart();
+                RefrescarVista();
+                sw.Stop();
+                double tVista = sw.Elapsed.TotalMilliseconds;
+
+                int enCola = rbPropia.Checked ? _colaPropia.Conteo :
+                             rbLinkedList.Checked ? _colaLinkedList.Count : _colaList.Count;
+
+                txtResultadosBenchmark.Text =
+                    $"=== CARGA MASIVA: {n:N0} PISTAS EN {estructura.ToUpper()} ===\r\n" +
+                    $"- Inserción de {n:N0} pistas (AgregarAlFinal): {tInsercion:F1} ms\r\n" +
+                    $"- Refresco de la tabla: {tVista:F1} ms\r\n" +
+                    $"- Total de pistas en cola: {enCola:N0}\r\n\r\n" +
+                    "Las pistas de prueba no tienen archivo de audio (no se pueden reproducir); " +
+                    "ahora puedes probar Invertir, Ordenar BPM y Purgar con 25k elementos reales.";
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+                btnCargar25k.Enabled = true;
             }
         }
 
@@ -122,6 +193,52 @@ namespace SoundCore.UI
             if (rbPropia.Checked) _colaPropia.AgregarAlFinal(pista);
             else if (rbLinkedList.Checked) _colaLinkedList.AddLast(pista);
             else _colaList.Add(pista);
+        }
+        private async Task<Pista?> SeleccionarYProcesarPistaAsync(string tituloDialogo)
+        {
+            using OpenFileDialog ofd = new OpenFileDialog
+            {
+                Filter = "Archivos de Audio|*.mp3;*.wav",
+                Title = tituloDialogo
+            };
+
+            if (ofd.ShowDialog() != DialogResult.OK) return null;
+
+            string file = ofd.FileName;
+            string title = System.IO.Path.GetFileNameWithoutExtension(file);
+            string artist = "Desconocido";
+            int bpm = 0;
+            int duration = 0;
+
+            try
+            {
+                using (var tagFile = TagLib.File.Create(file))
+                {
+                    if (!string.IsNullOrEmpty(tagFile.Tag.Title)) title = tagFile.Tag.Title;
+                    if (tagFile.Tag.Performers != null && tagFile.Tag.Performers.Length > 0) artist = string.Join(", ", tagFile.Tag.Performers);
+                    bpm = (int)tagFile.Tag.BeatsPerMinute;
+                    if (tagFile.Properties != null) duration = (int)tagFile.Properties.Duration.TotalSeconds;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error leyendo metadatos: {ex.Message}");
+            }
+
+            if (bpm == 0)
+            {
+                try
+                {
+                    var (bpmCalc, _) = await Task.Run(() => SoundCore.Audio.BpmService.ResolverBpm(file));
+                    bpm = bpmCalc;
+                }
+                catch
+                {
+                    bpm = 120;
+                }
+            }
+
+            return new Pista(_contadorId++, title, artist, bpm, duration, file);
         }
 
         private void btnPlay_Click(object? sender, EventArgs e)
@@ -200,35 +317,38 @@ namespace SoundCore.UI
             return new Pista(_contadorId++, titulo, artista, bpm, duracion, "");
         }
 
-        private void btnEncolarFinal_Click(object? sender, EventArgs e)
+        private async void btnEncolarFinal_Click(object? sender, EventArgs e)
         {
-            var pista = LeerPistaDesdeInputs();
-            InsertarAlFinal(pista);
-            RefrescarVista();
+            var pista = await SeleccionarYProcesarPistaAsync("Seleccionar canción para encolar al final");
+            if (pista != null)
+            {
+                InsertarAlFinal(pista);
+                RefrescarVista();
+            }
         }
-
-        private void btnUpNext_Click(object? sender, EventArgs e)
+        private async void btnUpNext_Click(object? sender, EventArgs e)
         {
-            var pista = LeerPistaDesdeInputs();
+            var pista = await SeleccionarYProcesarPistaAsync("Seleccionar canción para Up Next");
+            if (pista != null)
+            {
+                if (rbPropia.Checked)
+                {
+                    _colaPropia.ReproducirSiguiente(pista);
+                }
+                else if (rbLinkedList.Checked)
+                {
+                    if (_colaLinkedList.First == null) _colaLinkedList.AddFirst(pista);
+                    else _colaLinkedList.AddAfter(_colaLinkedList.First, pista);
+                }
+                else
+                {
+                    if (_colaList.Count <= 1) _colaList.Add(pista);
+                    else _colaList.Insert(1, pista);
+                }
 
-            if (rbPropia.Checked)
-            {
-                _colaPropia.ReproducirSiguiente(pista);
+                RefrescarVista();
             }
-            else if (rbLinkedList.Checked)
-            {
-                if (_colaLinkedList.First == null) _colaLinkedList.AddFirst(pista);
-                else _colaLinkedList.AddAfter(_colaLinkedList.First, pista);
-            }
-            else
-            {
-                if (_colaList.Count <= 1) _colaList.Add(pista);
-                else _colaList.Insert(1, pista);
-            }
-
-            RefrescarVista();
         }
-
         private void btnAvanzar_Click(object? sender, EventArgs e)
         {
             try
@@ -340,6 +460,7 @@ namespace SoundCore.UI
 
         private void RefrescarVista()
         {
+            dgvCola.SuspendLayout();
             dgvCola.Rows.Clear();
             IEnumerable<Pista> coleccion = rbPropia.Checked ? _colaPropia :
                                            rbLinkedList.Checked ? _colaLinkedList : _colaList;
@@ -354,11 +475,16 @@ namespace SoundCore.UI
             if (!string.IsNullOrEmpty(filtroArtista))
                 coleccion = coleccion.Where(p => p.Artista.ToLower().Contains(filtroArtista));
 
+            var filas = new List<DataGridViewRow>();
             int index = 1;
             foreach (var p in coleccion)
             {
-                dgvCola.Rows.Add(index++, p.Id, $"{p.Titulo} - {p.Artista}", p.Bpm, p.DuracionSegundos);
+                var fila = new DataGridViewRow();
+                fila.CreateCells(dgvCola, index++, p.Id, $"{p.Titulo} - {p.Artista}", p.Bpm, p.DuracionSegundos);
+                filas.Add(fila);
             }
+            dgvCola.Rows.AddRange(filas.ToArray());
+            dgvCola.ResumeLayout();
         }
 
         private async void btnBenchmark_Click(object? sender, EventArgs e)
@@ -421,6 +547,11 @@ namespace SoundCore.UI
             double tList = sw.Elapsed.TotalMilliseconds;
 
             return (tPropia, tLinked, tList);
+        }
+
+        private void txtResultadosBenchmark_TextChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }
